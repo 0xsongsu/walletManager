@@ -31,7 +31,7 @@ async function saveWalletsToCSV(wallets, filename) {
 }
 
 function saveIncompleteWalletsToFile(incompleteWallets, filename) {
-    const data = incompleteWallets.map(wallet => `钱包: ${wallet.index}、${wallet.incompletePrivateKey}`).join('\n\n');
+    const data = incompleteWallets.map(wallet => `钱包${wallet.index}:${wallet.incompletePrivateKey}`).join('\n');
     fs.writeFileSync(filename, data, 'utf8');
 }
 
