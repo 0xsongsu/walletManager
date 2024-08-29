@@ -1,20 +1,19 @@
+const { Keypair } = require('@solana/web3.js');
 const bip39 = require('bip39');
-const hdkey = require('hdkey');
-const Wallet = require('ethereumjs-wallet').default;
+const { derivePath } = require('ed25519-hd-key');
 const fs = require('fs');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 const mnemonic = " "; // 提供的助记词
 const walletCount = 10; // 自定义生成的钱包数量
 
-function generateWalletFromMnemonic(mnemonic, index) {
+function generateSolanaWalletFromMnemonic(mnemonic, index) {
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const root = hdkey.fromMasterSeed(seed);
-    const path = `m/44'/60'/0'/0/${index}`;
-    const child = root.derive(path);
-    const wallet = Wallet.fromPrivateKey(child.privateKey);
-    const address = wallet.getAddressString();
-    const privateKey = wallet.getPrivateKeyString().slice(2); // remove '0x' prefix
+    const path = `m/44'/501'/${index}'/0'`;
+    const derivedSeed = derivePath(path, seed.toString('hex')).key;
+    const keypair = Keypair.fromSeed(derivedSeed);
+    const address = keypair.publicKey.toBase58();
+    const privateKey = Buffer.from(keypair.secretKey).toString('hex');
     return { address, privateKey };
 }
 
@@ -38,20 +37,20 @@ function saveIncompleteWalletsToFile(incompleteWallets, filename) {
 async function main() {
     const wallets = [];
     for (let i = 0; i < walletCount; i++) {
-        const wallet = generateWalletFromMnemonic(mnemonic, i);
+        const wallet = generateSolanaWalletFromMnemonic(mnemonic, i);
         wallets.push({ index: i + 1, address: wallet.address, privateKey: wallet.privateKey });
     }
 
-    await saveWalletsToCSV(wallets, 'wallet.csv');
+    await saveWalletsToCSV(wallets, 'solana_wallet.csv');
 
     const incompleteWallets = wallets.map(wallet => ({
         index: wallet.index,
         incompletePrivateKey: wallet.privateKey.slice(0, -6),
     }));
 
-    saveIncompleteWalletsToFile(incompleteWallets, 'IncompleteWallet.txt');
+    saveIncompleteWalletsToFile(incompleteWallets, 'SolanaIncompleteWallet.txt');
 
-    console.log('钱包已经全部生成并保存.');
+    console.log('Solana钱包已经全部生成并保存.');
 }
 
 main().catch(console.error);
